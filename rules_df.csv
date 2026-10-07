@@ -870,33 +870,60 @@ SELECT
     COUNT({column}) AS applicable_count
 FROM {table}
 "
-PROFILING,P04,Minimum,SQL,Minimum value.,COLUMN,null,NUMERIC,NUMERIC_BUSINESS,null,null,"
-SELECT
-    CAST(MIN({column}) AS DOUBLE) AS metric_value,
-    COUNT({column}) AS passed_count,
+PROFILING,P04,Minimum,SQL,Minimum value.,COLUMN,null,NUMERIC,NUMERIC_BUSINESS,null,null,"SELECT
+    CAST(
+        MIN(
+            TRY_CAST({column} AS DECIMAL(18,2))
+        )
+        AS DOUBLE
+    ) AS metric_value,
+
+    0 AS passed_count,
     0 AS failed_count,
-    COUNT({column}) AS total_count,
-    COUNT({column}) AS applicable_count
-FROM {table}
-"
-PROFILING,P05,Maximum,SQL,Maximum value.,COLUMN,null,NUMERIC,NUMERIC_BUSINESS,null,null,"
-SELECT
-    CAST(MAX({column}) AS DOUBLE) AS metric_value,
-    COUNT({column}) AS passed_count,
+
+    COUNT(*) AS total_count,
+
+    COUNT(
+        TRY_CAST({column} AS DECIMAL(18,2))
+    ) AS applicable_count
+
+FROM {table}"
+PROFILING,P05,Maximum,SQL,Maximum value.,COLUMN,null,NUMERIC,NUMERIC_BUSINESS,null,null,"SELECT
+    CAST(
+        MAX(
+            TRY_CAST({column} AS DECIMAL(18,2))
+        )
+        AS DOUBLE
+    ) AS metric_value,
+
+    0 AS passed_count,
     0 AS failed_count,
-    COUNT({column}) AS total_count,
-    COUNT({column}) AS applicable_count
-FROM {table}
-"
-PROFILING,P06,Mean/Average,SQL,Average value.,COLUMN,null,NUMERIC,NUMERIC_BUSINESS,null,null,"
-SELECT
-    CAST(AVG({column}) AS DOUBLE) AS metric_value,
-    COUNT({column}) AS passed_count,
+
+    COUNT(*) AS total_count,
+
+    COUNT(
+        TRY_CAST({column} AS DECIMAL(18,2))
+    ) AS applicable_count
+
+FROM {table}"
+PROFILING,P06,Mean/Average,SQL,Average value.,COLUMN,null,NUMERIC,NUMERIC_BUSINESS,null,null,"SELECT
+    CAST(
+        AVG(
+            TRY_CAST({column} AS DECIMAL(18,2))
+        )
+        AS DOUBLE
+    ) AS metric_value,
+
+    0 AS passed_count,
     0 AS failed_count,
-    COUNT({column}) AS total_count,
-    COUNT({column}) AS applicable_count
-FROM {table}
-"
+
+    COUNT(*) AS total_count,
+
+    COUNT(
+        TRY_CAST({column} AS DECIMAL(18,2))
+    ) AS applicable_count
+
+FROM {table}"
 PROFILING,P07,Median,SQL,Approximate median value.,COLUMN,null,NUMERIC,NUMERIC_BUSINESS,null,null,"
 SELECT
     CAST(percentile_approx({column}, 0.5) AS DOUBLE) AS metric_value,
@@ -929,15 +956,21 @@ PROFILING,P09,Percentile,PARAMETERIZED,Configured percentile using percentile_ap
         }",null,"
 SELECT
     CAST(
-        percentile_approx({column}, {percentile})
+        PERCENTILE_APPROX(
+            TRY_CAST({column} AS DOUBLE),
+            {percentile}
+        )
         AS DOUBLE
     ) AS metric_value,
-    COUNT({column}) AS passed_count,
+
+    0 AS passed_count,
     0 AS failed_count,
-    COUNT({column}) AS total_count,
-    COUNT({column}) AS applicable_count
+
+    COUNT(*) AS total_count,
+
+    COUNT(TRY_CAST({column} AS DOUBLE)) AS applicable_count
+
 FROM {table}
-WHERE {column} IS NOT NULL
 "
 PROFILING,P10,Outlier %,PARAMETERIZED,Percentage of values identified as statistical outliers.,COLUMN,2.000000,NUMERIC,NUMERIC_BUSINESS,"{
           ""parameters"":[
@@ -1104,7 +1137,7 @@ SELECT
     CAST(
         TIMESTAMPDIFF(
             {time_unit},
-            MAX({column}),
+            MAX(TRY_CAST({column} AS TIMESTAMP)),
             CURRENT_TIMESTAMP()
         )
         AS DOUBLE
@@ -1112,8 +1145,11 @@ SELECT
 
     0 AS passed_count,
     0 AS failed_count,
+
     COUNT(*) AS total_count,
-    COUNT({column}) AS applicable_count
+
+    COUNT(TRY_CAST({column} AS TIMESTAMP)) AS applicable_count
+
 FROM {table}
 "
 TIMELINESS,T03,Average latency,PARAMETERIZED,Average difference between source and ingestion timestamps.,TABLE / COLUMN,null,DATE/TIMESTAMP,DATE_TIME,"{
@@ -1577,23 +1613,35 @@ FROM {table}
 WHERE {column} IS NOT NULL
 "
 VALIDITY,V08,Format compliance %,PARAMETERIZED,Percentage of values satisfying configured format.,COLUMN,99.000000,STRING,CODE/ID/EMAIL/PHONE,"{
-          ""parameters"":[
-            {
-              ""name"":""format_definition"",
-              ""label"":""Format definition"",
-              ""control"":""expression"",
-              ""required"":true
-            }
-          ]
-        }",>=,"
+  ""parameters"": [
+    {
+      ""name"": ""format_definition"",
+      ""label"": ""Format definition"",
+      ""control"": ""regex"",
+      ""required"": true
+    }
+  ]
+}",>=,"
 SELECT
-    100.0 * COUNT_IF({format_definition})
-        / NULLIF(COUNT({column}), 0) AS metric_value,
-    COUNT_IF({format_definition}) AS passed_count,
-    COUNT_IF(NOT ({format_definition})) AS failed_count,
+    100.0 * COUNT_IF(
+        REGEXP_LIKE({column}, {format_definition})
+    )
+    / NULLIF(COUNT({column}), 0) AS metric_value,
+
+    COUNT_IF(
+        REGEXP_LIKE({column}, {format_definition})
+    ) AS passed_count,
+
+    COUNT_IF(
+        NOT REGEXP_LIKE({column}, {format_definition})
+    ) AS failed_count,
+
     COUNT({column}) AS total_count,
+
     COUNT({column}) AS applicable_count
+
 FROM {table}
+
 WHERE {column} IS NOT NULL
 "
 VALIDITY,V09,Character compliance %,PARAMETERIZED,Percentage of values containing only permitted character classes.,COLUMN,99.000000,STRING,ANY,"{
@@ -1641,12 +1689,27 @@ FROM {table}
 "
 VALIDITY,V12,Future-date violation %,SQL,Percentage of non-null date/timestamp values occurring in the future.,COLUMN,0.100000,DATE/TIMESTAMP,DATE_TIME,null,<=,"
 SELECT
-    100.0 * COUNT_IF({column} > CURRENT_TIMESTAMP())
-        / NULLIF(COUNT({column}), 0) AS metric_value,
-    COUNT_IF({column} <= CURRENT_TIMESTAMP()) AS passed_count,
-    COUNT_IF({column} > CURRENT_TIMESTAMP()) AS failed_count,
-    COUNT({column}) AS total_count,
-    COUNT({column}) AS applicable_count
+    100.0 *
+    COUNT_IF(
+        TRY_CAST({column} AS TIMESTAMP) > CURRENT_TIMESTAMP()
+    )
+    / NULLIF(
+        COUNT(TRY_CAST({column} AS TIMESTAMP)),
+        0
+    ) AS metric_value,
+
+    COUNT_IF(
+        TRY_CAST({column} AS TIMESTAMP) <= CURRENT_TIMESTAMP()
+    ) AS passed_count,
+
+    COUNT_IF(
+        TRY_CAST({column} AS TIMESTAMP) > CURRENT_TIMESTAMP()
+    ) AS failed_count,
+
+    COUNT(TRY_CAST({column} AS TIMESTAMP)) AS total_count,
+
+    COUNT(TRY_CAST({column} AS TIMESTAMP)) AS applicable_count
+
 FROM {table}
 "
 VALIDITY,V13,Invalid value count,PARAMETERIZED,Count of values failing configured validation.,COLUMN / TABLE,null,ALL,ANY,"{
