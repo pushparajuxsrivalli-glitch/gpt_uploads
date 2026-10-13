@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>EDQ database design: interactive ERD</title>
+<style>
+:root{--ink:#1F2933;--muted:#5F6B76;--line:#C9D0D6;--edge:#8A949C;--hl:#14202B;--bg:#EEF1F3}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;font-family:"Segoe UI",Inter,Arial,sans-serif;color:var(--ink);background:var(--bg)}
+button,input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid #2563EB;outline-offset:2px}
+#app{height:100vh;display:flex;flex-direction:column}
+.top{display:flex;align-items:center;gap:14px;padding:10px 16px;background:#FAFBFC;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.brand h1{font-size:16px;margin:0}
+.brand div{font-size:12px;color:var(--muted);margin-top:2px}
+.search{flex:1;min-width:220px;max-width:520px}
+.search input{width:100%;height:36px;border:1px solid var(--line);border-radius:7px;padding:0 12px;background:#fff}
+.actions{display:flex;gap:6px;margin-left:auto;flex-wrap:wrap}
+.btn{height:34px;border:1px solid var(--line);background:#fff;border-radius:6px;padding:0 12px;cursor:pointer;font-size:13px}
+.btn:hover{background:#F1F3F5}
+.btn[aria-pressed="true"]{background:#1F2933;color:#fff;border-color:#1F2933}
+.nav{display:flex;align-items:center;gap:4px;padding:6px 12px;background:#FCFDFD;border-bottom:1px solid var(--line);overflow-x:auto;white-space:nowrap}
+.nav button{border:1px solid transparent;background:none;border-radius:6px;padding:6px 10px;font-size:12.5px;font-weight:600;color:#4B5560;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.nav button i{width:9px;height:9px;border-radius:2px;display:inline-block}
+.nav button:hover{background:#EEF1F3}
+.nav button.active{background:#1F2933;color:#fff}
+.stats{margin-left:auto;font-size:12px;color:var(--muted);padding-left:14px}
+.stats b{color:var(--ink)}
+.main{position:relative;flex:1;min-height:0}
+.vp{position:absolute;inset:0;overflow:hidden;cursor:grab;background-color:var(--bg);background-image:linear-gradient(#5a646c0d 1px,transparent 1px),linear-gradient(90deg,#5a646c0d 1px,transparent 1px);background-size:24px 24px}
+.vp.drag{cursor:grabbing}
+.scene{position:absolute;left:0;top:0;transform-origin:0 0}
+.band{position:absolute;border:1.5px dashed #BAC2C9;border-radius:12px;background:#ffffff55}
+.band .bt{position:absolute;left:14px;top:9px;font-size:13px;font-weight:700;color:#3D4852;display:flex;align-items:center;gap:7px}
+.band .bt i{width:10px;height:10px;border-radius:2px}
+.band .bt span{font-weight:400;color:var(--muted);font-size:12px}
+svg.edges{position:absolute;left:0;top:0;overflow:visible;pointer-events:none}
+.e{fill:none;stroke:var(--edge);stroke-width:1.3;opacity:.85;transition:opacity .15s}
+.e.user{stroke:#B4A1A1}
+.e.hl{stroke:var(--hl);stroke-width:2.6;opacity:1}
+.e.dim{opacity:.07}
+.jd{fill:var(--edge)}.jd.user{fill:#B4A1A1}.jd.dim{opacity:.07}.jd.hl{fill:var(--hl)}
+.el{font-size:10px;font-weight:600;fill:#59646E;paint-order:stroke;stroke:var(--bg);stroke-width:3.5px}
+.el.dim{opacity:.07}.el.hl{fill:var(--hl);font-weight:800}
+.tbl{position:absolute;background:#fff;border:1px solid #B5BEC5;border-radius:6px;box-shadow:0 6px 16px #1820281a;overflow:hidden;transition:opacity .15s,box-shadow .15s}
+.tbl.dim{opacity:.22;filter:saturate(.4)}
+.tbl.hl{box-shadow:0 0 0 2.5px var(--hl),0 10px 24px #18202833}
+.th{height:34px;color:#fff;display:flex;align-items:center;gap:8px;padding:0 10px;font-size:13.5px;font-weight:700;cursor:pointer}
+.th span{margin-left:auto;font-size:11px;font-weight:400;opacity:.8}
+.r{height:26px;display:grid;grid-template-columns:165px 1fr auto;gap:6px;align-items:center;padding:0 8px 0 10px;border-top:1px solid #E6E9EC;cursor:pointer;font-size:12px}
+.r:hover{background:#F3F5F7}
+.r.pkr{background:#FDF1F1}
+.r.fkr{background:#F2F5FC}
+.r.hl{background:#FFF1C7;box-shadow:inset 3px 0 #9A6B10}
+.r .n{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.r .ty{font-size:11px;color:#68737D;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.r .ty b{font-weight:600;color:#3B5BA9}
+.bd{display:flex;gap:3px}
+.b{font-size:9.5px;font-weight:700;line-height:15px;height:16px;padding:0 4px;border:1px solid #CDD3D8;border-radius:3px;background:#F7F8F9;color:#5E6870}
+.b.pk{background:#FCEBEB;color:#9B1C1C;border-color:#E9B4B4}
+.b.fk{background:#EAF0FB;color:#1E4FB0;border-color:#B5C7EC}
+.b.uk{background:#F8F1E3;color:#7A5B21;border-color:#DCC79B}
+.b.nn{color:#3F6650;border-color:#BFD3C5}
+.legend,.hint{position:absolute;bottom:14px;background:#fffffff2;border:1px solid var(--line);border-radius:8px;box-shadow:0 4px 14px #0000000f;font-size:12px;color:var(--muted);padding:10px 12px;z-index:5}
+.legend{left:14px;max-width:420px}.hint{right:14px}
+.legend strong{color:var(--ink);display:block;margin-bottom:6px}
+.lr{display:flex;align-items:center;gap:8px;margin-top:5px}
+.panel{position:absolute;right:0;top:0;height:100%;width:440px;max-width:94vw;background:#FBFCFC;border-left:1px solid var(--line);box-shadow:-8px 0 24px #0000001f;transform:translateX(102%);transition:transform .2s;z-index:10;display:flex;flex-direction:column}
+.panel.open{transform:none}
+.ph{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line);border-top:4px solid var(--pc,#1F2933)}
+.ph h2{font-size:16px;margin:0;word-break:break-word}
+.ph .x{margin-left:auto;border:0;background:none;font-size:22px;color:var(--muted);cursor:pointer}
+.pb{padding:14px 16px 30px;overflow:auto;font-size:13px}
+.meta{color:var(--muted);margin-bottom:10px}
+.dt{width:100%;border-collapse:collapse;font-size:12px}
+.dt th{text-align:left;background:#EFF2F4;color:var(--muted);padding:6px;font-weight:600}
+.dt td{padding:6px;overflow-wrap:anywhere;border-bottom:1px solid #E3E6E9;vertical-align:top}
+.dt td small{color:var(--muted)}
+.rel{padding:8px 10px;border:1px solid #D6DBDF;border-radius:6px;background:#fff;margin:6px 0;cursor:pointer}
+.rel:hover{border-color:#8A949C}
+.rel .num{display:inline-block;min-width:26px;font-weight:700;color:#3D4852}
+.rel small{display:block;color:var(--muted);margin-top:3px;font-family:Consolas,monospace;font-size:11px}
+h3{font-size:13px;margin:16px 0 6px}
+.toast{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);background:#1F2933;color:#fff;border-radius:6px;padding:7px 12px;font-size:12px;opacity:0;transition:opacity .2s;z-index:20;pointer-events:none}
+.toast.show{opacity:1}
+@media (max-width:900px){.stats{display:none}.hint{display:none}.legend{max-width:70vw}}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="top">
+    <div class="brand"><h1>EDQ database design</h1><div>Interactive ERD built from Excel_DB_DESIGN.xlsx</div></div>
+    <div class="search"><input id="q" type="search" placeholder="Search a table, column, data type or constraint" aria-label="Search"></div>
+    <div class="actions">
+      <button class="btn" id="tUser" aria-pressed="true" title="Show or hide the links to users.user_id">User links</button>
+      <button class="btn" id="zo" aria-label="Zoom out">−</button>
+      <button class="btn" id="zi" aria-label="Zoom in">+</button>
+      <button class="btn" id="fit">Fit</button>
+      <button class="btn" id="clr">Clear</button>
+    </div>
+  </div>
+  <div class="nav" id="nav"></div>
+  <div class="main">
+    <div class="vp" id="vp">
+      <div class="scene" id="scene"><div id="bands"></div><svg class="edges" id="svg"></svg><div id="tables"></div></div>
+    </div>
+    <div class="legend">
+      <strong>How to read the connections</strong>
+      <div class="lr"><svg width="70" height="12"><path d="M2 6H60" stroke="#8A949C" stroke-width="1.5"/><path d="M60 2L68 6L60 10Z" fill="#8A949C"/></svg>Parent PK on the left, arrow ends at the child FK row</div>
+      <div class="lr"><svg width="70" height="12"><path d="M2 6H60" stroke="#B4A1A1" stroke-width="1.5"/><path d="M60 2L68 6L60 10Z" fill="#B4A1A1"/></svg>Link to users.user_id</div>
+      <div class="lr"><svg width="70" height="12"><path d="M2 6H34V11M34 6H60" stroke="#8A949C" stroke-width="1.5" fill="none"/><circle cx="34" cy="6" r="2.8" fill="#8A949C"/></svg>Dot = one parent key branching to several children</div>
+      <div class="lr" style="margin-top:7px">Tables flow left to right in dependency order. Label on each arrow is the cardinality from the Connections sheet.</div>
+    </div>
+    <div class="hint">Drag to pan, wheel to zoom. Click a table or a column to trace it.</div>
+    <aside class="panel" id="panel" aria-hidden="true"><div class="ph"><h2 id="pt">Details</h2><button class="x" id="px" aria-label="Close">×</button></div><div class="pb" id="pb"></div></aside>
+    <div class="toast" id="toast"></div>
+  </div>
+</div>
+<script>
+const D={"tables": {"roles": {"sec": "users", "cols": [["role_id", "BIGSERIAL", "PK", "Unique role ID"], ["role_name", "VARCHAR(50)", "UNIQUE, NOT NULL", "Role name such as ADMIN or USER"], ["description", "VARCHAR(255)", "NULL", "Role description"], ["is_active", "BOOLEAN", "NOT NULL, DEFAULT TRUE", "Whether the role is active"], ["created_at", "TIMESTAMPTZ", "NOT NULL", "Creation timestamp"], ["updated_at", "TIMESTAMPTZ", "NOT NULL", "Last update timestamp"]]}, "users": {"sec": "users", "cols": [["user_id", "BIGSERIAL", "PK", "Unique user ID"], ["full_name", "VARCHAR(150)", "NOT NULL", "User full name"], ["email", "VARCHAR(255)", "UNIQUE, NOT NULL", "Login email"], ["password_hash", "TEXT", "NOT NULL", "Hashed password"], ["is_active", "BOOLEAN", "NOT NULL, DEFAULT TRUE", "Whether account is active"], ["last_login_at", "TIMESTAMPTZ", "NULL", "Last successful login"], ["created_at", "TIMESTAMPTZ", "NOT NULL", "Creation timestamp"], ["updated_at", "TIMESTAMPTZ", "NOT NULL", "Last update timestamp"]]}, "user_role_assignments": {"sec": "users", "cols": [["assignment_id", "BIGSERIAL", "PK", "Unique role assignment ID"], ["user_id", "BIGINT", "FK → users.user_id, NOT NULL", "User receiving role"], ["role_id", "BIGINT", "FK → roles.role_id, NOT NULL", "Assigned role"], ["permissions", "JSONB", "NOT NULL, DEFAULT '[]'::jsonb", "Permissions for this role assignment"], ["assigned_by", "BIGINT", "FK → users.user_id, NULL", "User who assigned role"], ["assigned_at", "TIMESTAMPTZ", "NOT NULL", "Assignment timestamp"], ["revoked_at", "TIMESTAMPTZ", "NULL", "Revocation timestamp"], ["is_active", "BOOLEAN", "NOT NULL, DEFAULT TRUE", "Whether assignment is active"]]}, "domains": {"sec": "assets", "cols": [["domain_id", "BIGSERIAL", "PK", "Unique domain ID"], ["domain_name", "VARCHAR(100)", "UNIQUE, NOT NULL", "Business domain"], ["description", "VARCHAR(255)", "NULL", "Domain description"], ["owner_user_id", "BIGINT", "FK → users.user_id, NULL", "Optional domain owner"], ["is_active", "BOOLEAN", "NOT NULL, DEFAULT TRUE", "Whether domain is active"], ["created_at", "TIMESTAMPTZ", "NOT NULL", "Creation timestamp"], ["updated_at", "TIMESTAMPTZ", "NOT NULL", "Last update timestamp"]]}, "sub_domains": {"sec": "assets", "cols": [["sub_domain_id", "BIGSERIAL", "PK", "Unique sub-domain ID"], ["domain_id", "BIGINT", "FK → domains.domain_id, NOT NULL", "Parent domain"], ["sub_domain_name", "VARCHAR(150)", "NOT NULL", "Sub-domain name"], ["description", "VARCHAR(255)", "NULL", "Sub-domain description"], ["owner_user_id", "BIGINT", "FK → users.user_id, NULL", "Optional sub-domain owner"], ["is_active", "BOOLEAN", "NOT NULL, DEFAULT TRUE", "Whether active"], ["created_at", "TIMESTAMPTZ", "NOT NULL", "Creation timestamp"], ["updated_at", "TIMESTAMPTZ", "NOT NULL", "Last update timestamp"]]}, "assets": {"sec": "assets", "cols": [["asset_id", "BIGSERIAL", "PK", "Unique asset ID"], ["domain_id", "BIGINT", "FK → domains.domain_id, NULL", "Business domain"], ["sub_domain_id", "BIGINT", "FK → sub_domains.sub_domain_id, NULL", "Business sub-domain"], ["asset_name", "VARCHAR(255)", "NOT NULL", "Asset name"], ["asset_type", "VARCHAR(50)", "NOT NULL", "Asset type"], ["description", "TEXT", "NULL", "Asset description"], ["is_active", "BOOLEAN", "NOT NULL, DEFAULT TRUE", "Whether asset is active"], ["created_at", "TIMESTAMPTZ", "NOT NULL", "Creation timestamp"], ["updated_at", "TIMESTAMPTZ", "NOT NULL", "Last update timestamp"], ["onboarded_by", "BIGINT", "FK → users.user_id, NULL", "User who onboarded asset"], ["onboarded_at", "TIMESTAMPTZ", "NULL", "Onboarding timestamp"], ["s3_path", "TEXT", "NOT NULL", "Location of the asset in S3"]]}, "asset_columns": {"sec": "assets", "cols": [["column_id", "BIGSERIAL", "PK", "Unique column metadata ID"], ["asset_id", "BIGINT", "FK → assets.asset_id, NOT NULL", "Parent asset"], ["column_name", "VARCHAR(255)", "NOT NULL", "Column name"], ["ordinal_position", "INTEGER", "NOT NULL", "Column position"], ["data_type", "VARCHAR(100)", "NULL", "Data type"], ["is_nullable", "BOOLEAN", "NULL", "Whether NULL is permitted"], ["metadata", "JSONB", "NULL", "Additional metadata"], ["created_at", "TIMESTAMPTZ", "NOT NULL", "Creation timestamp"], ["updated_at", "TIMESTAMPTZ", "NOT NULL", "Last update timestamp"]]}, "pipelines": {"sec": "pipes", "cols": [["pipeline_id", "BIGSERIAL", "PK", "Unique pipeline ID"], ["pipeline_name", "VARCHAR(150)", "UNIQUE, NOT NULL", "Pipeline name"], ["description", "TEXT", "NOT NULL", "Pipeline description"], ["schedule", "VARCHAR(100)", "NULL", "Optional schedule"], ["is_active", "BOOLEAN", "NOT NULL, DEFAULT TRUE", "Whether pipeline is active"], ["created_by", "BIGINT", "FK → users.user_id, NOT NULL", "Pipeline creator"], ["created_at", "TIMESTAMPTZ", "NOT NULL", "Creation timestamp"], ["updated_at", "TIMESTAMPTZ", "NOT NULL", "Last update timestamp"]]}, "pipeline_assets": {"sec": "pipes", "cols": [["pipeline_asset_id", "BIGSERIAL", "PK", "Unique pipeline-asset mapping ID"], ["pipeline_id", "BIGINT", "FK → pipelines.pipeline_id, NOT NULL", "Pipeline"], ["asset_id", "BIGINT", "FK → assets.asset_id, NOT NULL", "Asset in pipeline"], ["execution_order", "INTEGER", "NOT NULL", "Asset execution order"], ["is_active", "BOOLEAN", "NOT NULL, DEFAULT TRUE", "Whether mapping is active"], ["created_at", "TIMESTAMPTZ", "NOT NULL", "Creation timestamp"]]}, "rules": {"sec": "rules", "cols": [["rule_id", "BIGSERIAL", "PK", "Unique rule ID"], ["rule_code", "VARCHAR(100)", "UNIQUE, NOT NULL", "Unique rule identifier"], ["rule_name", "VARCHAR(150)", "NOT NULL", "Rule name"], ["description", "TEXT", "NULL", "Rule description"], ["target_type", "VARCHAR(50)", "NOT NULL", "Supported target scope: TABLE, COLUMN, CROSS-COLUMN, CROSS-TABLE"], ["is_active", "BOOLEAN", "NOT NULL, DEFAULT TRUE", "Whether rule is active"], ["created_by", "BIGINT", "FK → users.user_id, NULL", "User who created the rule"], ["created_at", "TIMESTAMPTZ", "NOT NULL", "Creation timestamp"], ["updated_at", "TIMESTAMPTZ", "NOT NULL", "Last update timestamp"]]}, "rule_versions": {"sec": "rules", "cols": [["rule_version_id", "BIGSERIAL", "PK", "Unique rule version ID"], ["rule_id", "BIGINT", "FK → rules.rule_id, NOT NULL", "Parent rule"], ["version_number", "INTEGER", "NOT NULL", "Version number of the rule"], ["parameter_schema", "JSONB", "NULL", "Expected parameter structure"], ["rule_definition", "JSONB", "NULL", "Rule configuration/definition"], ["created_by", "BIGINT", "FK → users.user_id, NULL", "User who created this version"], ["created_at", "TIMESTAMPTZ", "NOT NULL", "Version creation timestamp"], ["is_active", "BOOLEAN", "NOT NULL, DEFAULT TRUE", "Whether version is active"]]}, "asset_rule_assignments": {"sec": "rules", "cols": [["assignment_id", "BIGSERIAL", "PK", "Unique rule assignment ID"], ["asset_id", "BIGINT", "FK → assets.asset_id, NOT NULL", "Asset to which rule is assigned"], ["rule_id", "BIGINT", "FK → rules.rule_id, NOT NULL", "Rule assigned to the asset"], ["rule_version_id", "BIGINT", "FK → rule_versions.rule_version_id, NOT NULL", "Exact rule version used"], ["target_column_id", "BIGINT", "FK → asset_columns.column_id, NULL", "Target column when rule applies at column level"], ["target_type", "VARCHAR(50)", "NOT NULL", "Actual target scope: TABLE, COLUMN, CROSS-COLUMN, CROSS-TABLE"], ["parameter_values", "JSONB", "NULL", "Actual parameter values configured for this assignment"], ["sql_expression", "TEXT", "NULL", "Assignment-specific/custom SQL expression"], ["threshold_value", "NUMERIC", "NULL", "Threshold configured for this assignment"], ["evaluation_operation", "VARCHAR(5)", "NULL", "Comparison operator such as >, <, >=, <=, =, <>"], ["is_enabled", "BOOLEAN", "NOT NULL, DEFAULT TRUE", "Whether assignment is enabled"], ["effective_from", "TIMESTAMPTZ", "NULL", "Timestamp from which assignment is effective"], ["effective_to", "TIMESTAMPTZ", "NULL", "Timestamp until assignment is effective"], ["is_current", "BOOLEAN", "NOT NULL, DEFAULT TRUE", "Whether this is the current assignment configuration"], ["assigned_by", "BIGINT", "FK → users.user_id, NULL", "User who assigned the rule"], ["created_at", "TIMESTAMPTZ", "NOT NULL", "Assignment creation timestamp"], ["updated_at", "TIMESTAMPTZ", "NOT NULL", "Assignment update timestamp"]]}, "executions": {"sec": "exec", "cols": [["execution_id", "BIGSERIAL", "PK", "Unique execution ID"], ["execution_type", "VARCHAR(30)", "NOT NULL", "SINGLE_ASSET / MULTIPLE_ASSET / PIPELINE"], ["pipeline_id", "BIGINT", "FK → pipelines.pipeline_id, NULL", "Pipeline when execution type is PIPELINE"], ["triggered_by", "BIGINT", "FK → users.user_id, NULL", "User/system triggering execution"], ["status", "VARCHAR(30)", "NOT NULL", "Execution status"], ["started_at", "TIMESTAMPTZ", "NULL", "Start time"], ["completed_at", "TIMESTAMPTZ", "NULL", "Completion time"], ["created_at", "TIMESTAMPTZ", "NOT NULL", "Creation timestamp"]]}, "asset_executions": {"sec": "exec", "cols": [["asset_execution_id", "BIGSERIAL", "PK", "Unique asset execution ID"], ["execution_id", "BIGINT", "FK → executions.execution_id, NOT NULL", "Parent execution"], ["asset_id", "BIGINT", "FK → assets.asset_id, NOT NULL", "Executed asset"], ["status", "VARCHAR(30)", "NOT NULL", "Asset execution status"], ["started_at", "TIMESTAMPTZ", "NULL", "Start time"], ["completed_at", "TIMESTAMPTZ", "NULL", "Completion time"], ["total_rules", "INTEGER", "NULL", "Number of rules executed"], ["passed_rules", "INTEGER", "NULL", "Number of rules passed"], ["failed_rules", "INTEGER", "NULL", "Number of rules failed"], ["total_records", "BIGINT", "NULL", "Records evaluated"], ["passed_records", "BIGINT", "NULL", "Records passed"], ["failed_records", "BIGINT", "NULL", "Records failed"], ["dq_score_cumulative", "NUMERIC(5,2)", "NULL", "Overall DQ score"], ["error_message", "TEXT", "NULL", "Execution error if any"], ["dimension", "VARCHAR(50)", "NOT NULL", "DQ dimension"], ["threshold_value_cumulative", "NUMERIC", "NULL", "Threshold actually used for this execution"], ["created_at", "TIMESTAMPTZ", "NOT NULL", "Creation timestamp"]]}, "dq_execution_results": {"sec": "exec", "cols": [["result_id", "BIGSERIAL", "PK", "Unique result ID"], ["asset_execution_id", "BIGINT", "FK → asset_executions.asset_execution_id, NOT NULL", "Asset execution"], ["rule_id", "BIGINT", "FK → rules.rule_id, NULL", "Executed rule"], ["rule_version_id", "BIGINT", "FK → rule_versions.rule_version_id, NULL", "Exact rule version executed"], ["assignment_id", "BIGINT", "FK → asset_rule_assignments.assignment_id, NULL", "Asset-rule assignment used"], ["dimension", "VARCHAR(50)", "NOT NULL", "DQ dimension"], ["status", "VARCHAR(30)", "NOT NULL", "PASS / FAIL / ERROR / SKIPPED"], ["records_evaluated", "BIGINT", "NULL", "Records evaluated"], ["records_passed", "BIGINT", "NULL", "Records passed"], ["records_failed", "BIGINT", "NULL", "Records failed"], ["failure_percentage", "NUMERIC(7,2)", "NULL", "Percentage failed"], ["threshold_value", "NUMERIC", "NULL", "Threshold actually used for this execution"], ["result_details", "JSONB", "NULL", "Additional result details"], ["started_at", "TIMESTAMPTZ", "NULL", "Rule execution start"], ["completed_at", "TIMESTAMPTZ", "NULL", "Rule execution completion"], ["created_at", "TIMESTAMPTZ", "NOT NULL", "Result creation timestamp"]]}, "issues": {"sec": "issues", "cols": [["issue_id", "BIGSERIAL", "PK", "Unique issue ID"], ["rule_id", "BIGINT", "FK → rules.rule_id, NOT NULL", "DQ rule that generated the issue"], ["rule_version_id", "BIGINT", "FK → rule_versions.rule_version_id, NULL", "Exact rule version that generated the issue"], ["assignment_id", "BIGINT", "FK → asset_rule_assignments.assignment_id, NULL", "Specific rule assignment that generated the issue"], ["execution_id", "BIGINT", "FK → executions.execution_id, NOT NULL", "Execution that generated the issue"], ["asset_execution_id", "BIGINT", "FK → asset_executions.asset_execution_id, NULL", "Specific asset execution that generated the issue"], ["asset_id", "BIGINT", "FK → assets.asset_id, NOT NULL", "Asset where issue was detected"], ["column_id", "BIGINT", "FK → asset_columns.column_id, NULL", "Column where issue was detected, if applicable"], ["issue_description", "VARCHAR(500)", "NOT NULL", "Description of detected issue"], ["issue_category", "VARCHAR(100)", "NOT NULL", "Category of issue"], ["issue_owner", "BIGINT", "FK → users.user_id, NOT NULL", "Domain/user owner responsible for issue"], ["generated_at", "TIMESTAMPTZ", "NOT NULL", "Timestamp when issue was generated"]]}, "issue_management": {"sec": "issues", "cols": [["issue_management_id", "BIGSERIAL", "PK", "Unique issue management record"], ["issue_id", "BIGINT", "FK → issues.issue_id, UNIQUE, NOT NULL", "Issue being managed"], ["issue_status", "VARCHAR(50)", "NOT NULL", "Current issue status"], ["assigned_to", "BIGINT", "FK → users.user_id, NULL", "User assigned to work on issue"], ["assigned_by", "BIGINT", "FK → users.user_id, NULL", "User who assigned issue"], ["assigned_at", "TIMESTAMPTZ", "NULL", "Timestamp when issue was assigned"], ["priority", "VARCHAR(20)", "NOT NULL", "Critical / High / Medium / Low"], ["due_at", "TIMESTAMPTZ", "NULL", "Target resolution date/time"], ["updated_by", "BIGINT", "FK → users.user_id, NOT NULL", "User who last updated issue"], ["updated_at", "TIMESTAMPTZ", "NOT NULL", "Timestamp of latest update"]]}, "issue_audit": {"sec": "issues", "cols": [["audit_id", "BIGSERIAL", "PK", "Unique issue audit event ID"], ["issue_id", "BIGINT", "FK → issues.issue_id, NOT NULL", "Issue associated with audit event"], ["issue_management_id", "BIGINT", "FK → issue_management.issue_management_id, NULL", "Related issue management record"], ["event_type", "VARCHAR(50)", "NOT NULL", "Type of lifecycle event"], ["previous_status", "VARCHAR(50)", "NULL", "Issue status before event"], ["new_status", "VARCHAR(50)", "NULL", "Issue status after event"], ["previous_assignee", "BIGINT", "FK → users.user_id, NULL", "User previously assigned"], ["new_assignee", "BIGINT", "FK → users.user_id, NULL", "User newly assigned"], ["previous_due_at", "TIMESTAMPTZ", "NULL", "Previous due date/time"], ["new_due_at", "TIMESTAMPTZ", "NULL", "New due date/time"], ["actioned_by", "BIGINT", "FK → users.user_id, NOT NULL", "User/system performing action"], ["actioned_at", "TIMESTAMPTZ", "NOT NULL", "Timestamp when audit event occurred"]]}, "audit_logs": {"sec": "audit", "cols": [["audit_id", "BIGSERIAL", "PK", "Unique audit ID"], ["user_id", "BIGINT", "FK → users.user_id, NULL", "User performing action"], ["action", "VARCHAR(100)", "NOT NULL", "Action performed"], ["entity_type", "VARCHAR(100)", "NOT NULL", "Affected entity type"], ["entity_id", "BIGINT", "NULL", "Affected entity ID; no FK because multiple entity types"], ["old_values", "JSONB", "NULL", "Previous values"], ["new_values", "JSONB", "NULL", "New values"], ["ip_address", "INET", "NULL", "Client IP"], ["user_agent", "TEXT", "NULL", "Client user agent"], ["created_at", "TIMESTAMPTZ", "NOT NULL", "Audit timestamp"]]}}, "order": ["roles", "users", "user_role_assignments", "domains", "sub_domains", "assets", "asset_columns", "pipelines", "pipeline_assets", "rules", "rule_versions", "asset_rule_assignments", "executions", "asset_executions", "dq_execution_results", "issues", "issue_management", "issue_audit", "audit_logs"], "rels": [{"n": 1, "p": "users", "pc": "user_id", "c": "user_role_assignments", "cc": "user_id", "card": "1:N", "join": "users.user_id = user_role_assignments.user_id", "nul": false}, {"n": 2, "p": "roles", "pc": "role_id", "c": "user_role_assignments", "cc": "role_id", "card": "1:N", "join": "roles.role_id = user_role_assignments.role_id", "nul": false}, {"n": 3, "p": "users", "pc": "user_id", "c": "user_role_assignments", "cc": "assigned_by", "card": "1:N", "join": "users.user_id = user_role_assignments.assigned_by", "nul": true}, {"n": 4, "p": "users", "pc": "user_id", "c": "domains", "cc": "owner_user_id", "card": "1:N", "join": "users.user_id = domains.owner_user_id", "nul": true}, {"n": 5, "p": "domains", "pc": "domain_id", "c": "sub_domains", "cc": "domain_id", "card": "1:N", "join": "domains.domain_id = sub_domains.domain_id", "nul": false}, {"n": 6, "p": "users", "pc": "user_id", "c": "sub_domains", "cc": "owner_user_id", "card": "1:N", "join": "users.user_id = sub_domains.owner_user_id", "nul": true}, {"n": 7, "p": "domains", "pc": "domain_id", "c": "assets", "cc": "domain_id", "card": "1:N", "join": "domains.domain_id = assets.domain_id", "nul": true}, {"n": 8, "p": "sub_domains", "pc": "sub_domain_id", "c": "assets", "cc": "sub_domain_id", "card": "1:N", "join": "sub_domains.sub_domain_id = assets.sub_domain_id", "nul": true}, {"n": 9, "p": "users", "pc": "user_id", "c": "assets", "cc": "onboarded_by", "card": "1:N", "join": "users.user_id = assets.onboarded_by", "nul": true}, {"n": 10, "p": "assets", "pc": "asset_id", "c": "asset_columns", "cc": "asset_id", "card": "1:N", "join": "assets.asset_id = asset_columns.asset_id", "nul": false}, {"n": 11, "p": "users", "pc": "user_id", "c": "pipelines", "cc": "created_by", "card": "1:N", "join": "users.user_id = pipelines.created_by", "nul": false}, {"n": 12, "p": "pipelines", "pc": "pipeline_id", "c": "pipeline_assets", "cc": "pipeline_id", "card": "1:N", "join": "pipelines.pipeline_id = pipeline_assets.pipeline_id", "nul": false}, {"n": 13, "p": "assets", "pc": "asset_id", "c": "pipeline_assets", "cc": "asset_id", "card": "1:N", "join": "assets.asset_id = pipeline_assets.asset_id", "nul": false}, {"n": 14, "p": "users", "pc": "user_id", "c": "rules", "cc": "created_by", "card": "1:N", "join": "users.user_id = rules.created_by", "nul": true}, {"n": 15, "p": "rules", "pc": "rule_id", "c": "rule_versions", "cc": "rule_id", "card": "1:N", "join": "rules.rule_id = rule_versions.rule_id", "nul": false}, {"n": 16, "p": "users", "pc": "user_id", "c": "rule_versions", "cc": "created_by", "card": "1:N", "join": "users.user_id = rule_versions.created_by", "nul": true}, {"n": 17, "p": "assets", "pc": "asset_id", "c": "asset_rule_assignments", "cc": "asset_id", "card": "1:N", "join": "assets.asset_id = asset_rule_assignments.asset_id", "nul": false}, {"n": 18, "p": "rules", "pc": "rule_id", "c": "asset_rule_assignments", "cc": "rule_id", "card": "1:N", "join": "rules.rule_id = asset_rule_assignments.rule_id", "nul": false}, {"n": 19, "p": "rule_versions", "pc": "rule_version_id", "c": "asset_rule_assignments", "cc": "rule_version_id", "card": "1:N", "join": "rule_versions.rule_version_id = asset_rule_assignments.rule_version_id", "nul": false}, {"n": 20, "p": "asset_columns", "pc": "column_id", "c": "asset_rule_assignments", "cc": "target_column_id", "card": "1:N", "join": "asset_columns.column_id = asset_rule_assignments.target_column_id", "nul": true}, {"n": 21, "p": "users", "pc": "user_id", "c": "asset_rule_assignments", "cc": "assigned_by", "card": "1:N", "join": "users.user_id = asset_rule_assignments.assigned_by", "nul": true}, {"n": 22, "p": "pipelines", "pc": "pipeline_id", "c": "executions", "cc": "pipeline_id", "card": "1:N", "join": "pipelines.pipeline_id = executions.pipeline_id", "nul": true}, {"n": 23, "p": "users", "pc": "user_id", "c": "executions", "cc": "triggered_by", "card": "1:N", "join": "users.user_id = executions.triggered_by", "nul": true}, {"n": 24, "p": "executions", "pc": "execution_id", "c": "asset_executions", "cc": "execution_id", "card": "1:N", "join": "executions.execution_id = asset_executions.execution_id", "nul": false}, {"n": 25, "p": "assets", "pc": "asset_id", "c": "asset_executions", "cc": "asset_id", "card": "1:N", "join": "assets.asset_id = asset_executions.asset_id", "nul": false}, {"n": 26, "p": "asset_executions", "pc": "asset_execution_id", "c": "dq_execution_results", "cc": "asset_execution_id", "card": "1:N", "join": "asset_executions.asset_execution_id = dq_execution_results.asset_execution_id", "nul": false}, {"n": 27, "p": "rules", "pc": "rule_id", "c": "dq_execution_results", "cc": "rule_id", "card": "1:N", "join": "rules.rule_id = dq_execution_results.rule_id", "nul": true}, {"n": 28, "p": "rule_versions", "pc": "rule_version_id", "c": "dq_execution_results", "cc": "rule_version_id", "card": "1:N", "join": "rule_versions.rule_version_id = dq_execution_results.rule_version_id", "nul": true}, {"n": 29, "p": "asset_rule_assignments", "pc": "assignment_id", "c": "dq_execution_results", "cc": "assignment_id", "card": "1:N", "join": "asset_rule_assignments.assignment_id = dq_execution_results.assignment_id", "nul": true}, {"n": 30, "p": "rules", "pc": "rule_id", "c": "issues", "cc": "rule_id", "card": "1:N", "join": "rules.rule_id = issues.rule_id", "nul": false}, {"n": 31, "p": "rule_versions", "pc": "rule_version_id", "c": "issues", "cc": "rule_version_id", "card": "1:N", "join": "rule_versions.rule_version_id = issues.rule_version_id", "nul": true}, {"n": 32, "p": "asset_rule_assignments", "pc": "assignment_id", "c": "issues", "cc": "assignment_id", "card": "1:N", "join": "asset_rule_assignments.assignment_id = issues.assignment_id", "nul": true}, {"n": 33, "p": "executions", "pc": "execution_id", "c": "issues", "cc": "execution_id", "card": "1:N", "join": "executions.execution_id = issues.execution_id", "nul": false}, {"n": 34, "p": "asset_executions", "pc": "asset_execution_id", "c": "issues", "cc": "asset_execution_id", "card": "1:N", "join": "asset_executions.asset_execution_id = issues.asset_execution_id", "nul": true}, {"n": 35, "p": "assets", "pc": "asset_id", "c": "issues", "cc": "asset_id", "card": "1:N", "join": "assets.asset_id = issues.asset_id", "nul": false}, {"n": 36, "p": "asset_columns", "pc": "column_id", "c": "issues", "cc": "column_id", "card": "1:N", "join": "asset_columns.column_id = issues.column_id", "nul": true}, {"n": 37, "p": "users", "pc": "user_id", "c": "issues", "cc": "issue_owner", "card": "1:N", "join": "users.user_id = issues.issue_owner", "nul": false}, {"n": 38, "p": "issues", "pc": "issue_id", "c": "issue_management", "cc": "issue_id", "card": "1:1", "join": "issues.issue_id = issue_management.issue_id", "nul": false}, {"n": 39, "p": "users", "pc": "user_id", "c": "issue_management", "cc": "assigned_to", "card": "1:N", "join": "users.user_id = issue_management.assigned_to", "nul": true}, {"n": 40, "p": "users", "pc": "user_id", "c": "issue_management", "cc": "assigned_by", "card": "1:N", "join": "users.user_id = issue_management.assigned_by", "nul": true}, {"n": 41, "p": "users", "pc": "user_id", "c": "issue_management", "cc": "updated_by", "card": "1:N", "join": "users.user_id = issue_management.updated_by", "nul": false}, {"n": 42, "p": "issues", "pc": "issue_id", "c": "issue_audit", "cc": "issue_id", "card": "1:N", "join": "issues.issue_id = issue_audit.issue_id", "nul": false}, {"n": 43, "p": "issue_management", "pc": "issue_management_id", "c": "issue_audit", "cc": "issue_management_id", "card": "1:N", "join": "issue_management.issue_management_id = issue_audit.issue_management_id", "nul": true}, {"n": 44, "p": "users", "pc": "user_id", "c": "issue_audit", "cc": "previous_assignee", "card": "1:N", "join": "users.user_id = issue_audit.previous_assignee", "nul": true}, {"n": 45, "p": "users", "pc": "user_id", "c": "issue_audit", "cc": "new_assignee", "card": "1:N", "join": "users.user_id = issue_audit.new_assignee", "nul": true}, {"n": 46, "p": "users", "pc": "user_id", "c": "issue_audit", "cc": "actioned_by", "card": "1:N", "join": "users.user_id = issue_audit.actioned_by", "nul": false}, {"n": 47, "p": "users", "pc": "user_id", "c": "audit_logs", "cc": "user_id", "card": "1:N", "join": "users.user_id = audit_logs.user_id", "nul": true}]};
+const SECS={users:{name:'Users & Access',color:'#7A1010',n:1},assets:{name:'Asset Catalog',color:'#1B3A8C',n:2},pipes:{name:'Pipelines',color:'#0F6E6E',n:3},rules:{name:'DQ Rules',color:'#B35400',n:4},exec:{name:'DQ Execution',color:'#1E6B1E',n:5},issues:{name:'Issue Management',color:'#6B1F7A',n:6},audit:{name:'Audit',color:'#3F3F46',n:null}};
+const LANE={users:0,audit:3,exec:0,assets:1,issues:1,rules:2,pipes:3};
+const COL={roles:0,users:0,user_role_assignments:1,audit_logs:6,domains:1,pipelines:1,rules:1,sub_domains:2,rule_versions:2,executions:2,assets:3,asset_columns:4,pipeline_assets:4,asset_executions:4,asset_rule_assignments:5,dq_execution_results:6,issues:6,issue_management:7,issue_audit:8};
+const NCOL=9,NLANE=4,TW=430,TH=34,RH=26,STACK=34,SP=9;
+const T=D.tables,R=D.rels.map(r=>({...r,user:r.p==='users'}));
+const NS='http://www.w3.org/2000/svg';
+const esc=s=>String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const lane=t=>LANE[T[t].sec];
+const colIdx=(t,c)=>T[t].cols.findIndex(x=>x[0]===c);
+const tH=t=>TH+T[t].cols.length*RH;
+let showUser=true;
+
+R.forEach(r=>{if(!(COL[r.c]>COL[r.p]))console.error('layout order broken',r)});
+
+let G={};
+function geometry(GW,CH){
+  const colX=[];let x=GW[0];for(let c=0;c<NCOL;c++){colX.push(x);x+=TW+GW[c+1]}
+  const W=x;
+  const stacks={};
+  Object.keys(T).forEach(t=>{const k=lane(t)+'|'+COL[t];(stacks[k]=stacks[k]||[]).push(t)});
+  const laneH=Array(NLANE).fill(0);
+  Object.entries(stacks).forEach(([k,ts])=>{const l=+k.split('|')[0];laneH[l]=Math.max(laneH[l],ts.reduce((a,t)=>a+tH(t),0)+STACK*(ts.length-1))});
+  const corr=[],bandY=[],pos={};let y=0;
+  for(let l=0;l<=NLANE;l++){
+    corr.push([y,y+CH[l]]);y+=CH[l];
+    if(l===NLANE)break;
+    const top=y,tablesTop=y+44;bandY.push([top,tablesTop+laneH[l]+16]);
+    Object.entries(stacks).forEach(([k,ts])=>{const [ll,c]=k.split('|').map(Number);if(ll!==l)return;let yy=tablesTop;ts.forEach(t=>{pos[t]={x:colX[c],y:yy};yy+=tH(t)+STACK})});
+    y=tablesTop+laneH[l]+16;
+  }
+  const gl=g=>g===0?0:colX[g-1]+TW, gr=g=>g===NCOL?W:colX[g];
+  return {colX,W,H:y,corr,bandY,pos,gl,gr};
+}
+function route(geo){
+  const rowY=(t,c)=>geo.pos[t].y+TH+colIdx(t,c)*RH+RH/2;
+  const E=R.filter(r=>showUser||!r.user).map(r=>{
+    const pc=COL[r.p],cc=COL[r.c],pl=lane(r.p),cl=lane(r.c);
+    const py=rowY(r.p,r.pc),cy=rowY(r.c,r.cc);
+    const o={r,pc,cc,py,cy,tk:r.p+'.'+r.pc,adj:cc===pc+1};
+    if(!o.adj){
+      let cands=cl>pl?[cl]:cl<pl?[cl+1]:[cl,cl+1];
+      o.k=cands.reduce((b,k)=>{const m=(geo.corr[k][0]+geo.corr[k][1])/2;const d=Math.abs(py-m)+Math.abs(cy-m);return !b||d<b.d?{k,d}:b},null).k;
+    }
+    return o;
+  });
+  const slot=(store,key,lo,hi,pad)=>{const L=store[key]=store[key]||[];for(let i=0;;i++){if(!L[i])L[i]=[];if(L[i].every(([a,b])=>hi<a-pad||lo>b+pad)){L[i].push([lo,hi]);return i}}};
+  const cm=k=>(geo.corr[k][0]+geo.corr[k][1])/2;
+  const trunks={};
+  E.forEach(e=>{const t=trunks[e.tk]=trunks[e.tk]||{g:e.pc+1,lo:e.py,hi:e.py,edges:[]};const y2=e.adj?e.cy:cm(e.k);t.lo=Math.min(t.lo,y2);t.hi=Math.max(t.hi,y2);t.edges.push(e)});
+  const tS={},bS={},rS={};
+  Object.values(trunks).sort((a,b)=>(a.hi-a.lo)-(b.hi-b.lo)).forEach(t=>t.slot=slot(tS,t.g,t.lo,t.hi,12));
+  E.filter(e=>!e.adj).sort((a,b)=>Math.abs(a.cy-cm(a.k))-Math.abs(b.cy-cm(b.k))).forEach(e=>e.bslot=slot(bS,e.cc,Math.min(e.cy,cm(e.k)),Math.max(e.cy,cm(e.k)),12));
+  const runs={};
+  E.filter(e=>!e.adj).forEach(e=>{const key=e.tk+'@'+e.k;const r=runs[key]=runs[key]||{k:e.k,g1:e.pc+1,g2:e.cc,edges:[]};r.g2=Math.max(r.g2,e.cc);r.edges.push(e);e.run=r});
+  Object.values(runs).sort((a,b)=>(a.g2-a.g1)-(b.g2-b.g1)).forEach(r=>r.slot=slot(rS,r.k,r.g1,r.g2,0.6));
+  return {E,trunks,runs,tS,bS,rS};
+}
+function solve(){
+  let GW=Array(NCOL+1).fill(80),CH=Array(NLANE+1).fill(60),geo,rt;
+  for(let it=0;it<4;it++){
+    geo=geometry(GW,CH);rt=route(geo);
+    GW=GW.map((_,g)=>Math.max(70,32+((rt.tS[g]||[]).length)*SP+((rt.bS[g]||[]).length)*SP+46));
+    CH=CH.map((_,k)=>Math.max(36,28+((rt.rS[k]||[]).length)*SP));
+  }
+  geo=geometry(GW,CH);rt=route(geo);
+  return {geo,rt};
+}
+
+const scene=document.getElementById('scene'),svg=document.getElementById('svg'),tablesEl=document.getElementById('tables'),bandsEl=document.getElementById('bands'),vp=document.getElementById('vp');
+const tblEl={},rowEl={};
+function buildTables(){
+  tablesEl.innerHTML='';
+  D.order.forEach(t=>{
+    const s=SECS[T[t].sec],el=document.createElement('div');el.className='tbl';el.dataset.t=t;
+    const fkOf={};R.forEach(r=>{if(r.c===t)fkOf[r.cc]=r});
+    el.innerHTML=`<div class="th" style="background:${s.color}">${esc(t)}<span>${T[t].cols.length} cols</span></div>`+T[t].cols.map(c=>{
+      const con=c[2],isPK=/^PK/.test(con),f=fkOf[c[0]];
+      const bs=[];if(isPK)bs.push('<span class="b pk">PK</span>');if(f)bs.push('<span class="b fk">FK</span>');if(/UNIQUE/.test(con))bs.push('<span class="b uk">UK</span>');if(/NOT NULL/.test(con))bs.push('<span class="b nn">NN</span>');
+      const ty=f?`${esc(c[1])} <b>→ ${esc(f.p)}.${esc(f.pc)}</b>`:esc(c[1]);
+      return `<div class="r${isPK?' pkr':''}${f?' fkr':''}" data-c="${esc(c[0])}" title="${esc(c[3])}"><span class="n">${esc(c[0])}</span><span class="ty">${ty}</span><span class="bd">${bs.join('')}</span></div>`;
+    }).join('');
+    tablesEl.appendChild(el);tblEl[t]=el;
+    el.querySelector('.th').addEventListener('click',ev=>{ev.stopPropagation();selectTable(t)});
+    el.querySelectorAll('.r').forEach(r=>{rowEl[t+'|'+r.dataset.c]=r;r.addEventListener('click',ev=>{ev.stopPropagation();selectCol(t,r.dataset.c)})});
+  });
+}
+let L;
+function draw(){
+  L=solve();const {geo,rt}=L;
+  scene.style.width=geo.W+'px';scene.style.height=geo.H+'px';svg.setAttribute('width',geo.W);svg.setAttribute('height',geo.H);
+  Object.entries(geo.pos).forEach(([t,p])=>{tblEl[t].style.left=p.x+'px';tblEl[t].style.top=p.y+'px';tblEl[t].style.width=TW+'px'});
+  bandsEl.innerHTML='';
+  Object.entries(SECS).forEach(([sid,s])=>{
+    const ts=Object.keys(T).filter(t=>T[t].sec===sid);if(!ts.length)return;
+    const l=lane(ts[0]),c1=Math.min(...ts.map(t=>COL[t])),c2=Math.max(...ts.map(t=>COL[t]));
+    const x1=geo.colX[c1]-16,x2=geo.colX[c2]+TW+16,[y1,y2]=geo.bandY[l];
+    const b=document.createElement('div');b.className='band';b.dataset.sec=sid;
+    b.style.cssText=`left:${x1}px;top:${y1+4}px;width:${x2-x1}px;height:${y2-y1-4}px`;
+    b.innerHTML=`<div class="bt"><i style="background:${s.color}"></i>${s.n?s.n+'. ':''}${esc(s.name)}<span>${ts.length} table${ts.length>1?'s':''}</span></div>`;
+    bandsEl.appendChild(b);s.box=[x1,y1,x2,y2];
+  });
+  svg.innerHTML=`<defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#8A949C"/></marker><marker id="aru" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#B4A1A1"/></marker><marker id="arh" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#14202B"/></marker></defs><g id="gE"></g><g id="gD"></g><g id="gL"></g>`;
+  const gE=svg.querySelector('#gE'),gD=svg.querySelector('#gD'),gL=svg.querySelector('#gL');
+  const nT={},nB={};Object.entries(rt.tS).forEach(([g,a])=>nT[g]=a.length);Object.entries(rt.bS).forEach(([g,a])=>nB[g]=a.length);
+  const tx=t=>geo.gl(t.g)+16+t.slot*SP;
+  const bx=e=>geo.gr(e.cc)-34-e.bslot*SP;
+  const ry=r=>geo.corr[r.k][0]+14+r.slot*SP;
+  rt.E.forEach(e=>{
+    const t=rt.trunks[e.tk],T0=tx(t),pR=geo.pos[e.r.p].x+TW,cL=geo.pos[e.r.c].x;
+    let pts;
+    if(e.adj)pts=[[pR,e.py],[T0,e.py],[T0,e.cy],[cL-1,e.cy]];
+    else{const Y=ry(e.run),B=bx(e);pts=[[pR,e.py],[T0,e.py],[T0,Y],[B,Y],[B,e.cy],[cL-1,e.cy]];e.j=[B,Y];e.tj=[T0,Y]}
+    const p=document.createElementNS(NS,'path');p.setAttribute('d','M'+pts.map(q=>q.join(' ')).join(' L'));
+    p.setAttribute('class','e'+(e.r.user?' user':''));p.setAttribute('marker-end',e.r.user?'url(#aru)':'url(#ar)');p.id='E'+e.r.n;
+    const tt=document.createElementNS(NS,'title');tt.textContent=`#${e.r.n}  ${e.r.p}.${e.r.pc} → ${e.r.c}.${e.r.cc}  (${e.r.card})`;p.appendChild(tt);
+    gE.appendChild(p);e.el=p;
+    const lb=document.createElementNS(NS,'text');lb.setAttribute('x',cL-12);lb.setAttribute('y',e.cy-5);lb.setAttribute('text-anchor','end');lb.setAttribute('class','el');lb.textContent=e.r.card;gL.appendChild(lb);e.lb=lb;
+    e.dots=[];
+    const addDot=(x,y)=>{const c=document.createElementNS(NS,'circle');c.setAttribute('cx',x);c.setAttribute('cy',y);c.setAttribute('r',3.2);c.setAttribute('class','jd'+(e.r.user?' user':''));gD.appendChild(c);e.dots.push(c)};
+    if(!e.adj){const r=e.run;if(r.edges.length>1||t.edges.length>1)addDot(e.j[0],e.j[1]);if(t.edges.length>1)addDot(e.tj[0],e.tj[1])}
+    else if(t.edges.length>1)addDot(T0,e.cy);
+  });
+  applySel();
+}
+
+let sel=null;
+function clearCls(){document.querySelectorAll('.tbl,.r').forEach(e=>e.classList.remove('hl','dim'))}
+function applySel(){
+  clearCls();
+  const E=L.rt.E;
+  if(!sel){E.forEach(e=>{e.el.classList.remove('hl','dim');e.el.setAttribute('marker-end',e.r.user?'url(#aru)':'url(#ar)');e.lb.classList.remove('hl','dim');e.dots.forEach(d=>d.classList.remove('hl','dim'))});return}
+  const hit=e=>sel.type==='table'?(e.r.p===sel.t||e.r.c===sel.t):sel.type==='col'?((e.r.p===sel.t&&e.r.pc===sel.c)||(e.r.c===sel.t&&e.r.cc===sel.c)):sel.type==='rel'?e.r.n===sel.n:sel.type==='sec'?(T[e.r.p].sec===sel.s||T[e.r.c].sec===sel.s):false;
+  const keep=new Set();
+  E.forEach(e=>{const h=hit(e);e.el.classList.toggle('hl',h);e.el.classList.toggle('dim',!h);e.el.setAttribute('marker-end',h?'url(#arh)':(e.r.user?'url(#aru)':'url(#ar)'));e.lb.classList.toggle('hl',h);e.lb.classList.toggle('dim',!h);e.dots.forEach(d=>{d.classList.toggle('hl',h);d.classList.toggle('dim',!h)});if(h){keep.add(e.r.p);keep.add(e.r.c);e.el.parentNode.appendChild(e.el);if(sel.type!=='table'&&sel.type!=='sec'){rowEl[e.r.p+'|'+e.r.pc].classList.add('hl');rowEl[e.r.c+'|'+e.r.cc].classList.add('hl')}}});
+  if(sel.type==='table'||sel.type==='col')keep.add(sel.t);
+  if(sel.type==='sec')Object.keys(T).forEach(t=>{if(T[t].sec===sel.s)keep.add(t)});
+  Object.entries(tblEl).forEach(([t,el])=>{el.classList.toggle('dim',!keep.has(t));el.classList.toggle('hl',(sel.type==='table'||sel.type==='col')&&t===sel.t)});
+  if(sel.type==='col')rowEl[sel.t+'|'+sel.c].classList.add('hl');
+}
+const panel=document.getElementById('panel');
+function openPanel(title,color,html){document.getElementById('pt').textContent=title;panel.style.setProperty('--pc',color);document.getElementById('pb').innerHTML=html;panel.classList.add('open');panel.setAttribute('aria-hidden','false');
+  document.querySelectorAll('#pb [data-rel]').forEach(b=>b.addEventListener('click',()=>selectRel(+b.dataset.rel)));
+  document.querySelectorAll('#pb [data-tb]').forEach(b=>b.addEventListener('click',()=>{selectTable(b.dataset.tb);focusTable(b.dataset.tb)}))}
+const relCard=r=>`<div class="rel" data-rel="${r.n}"><span class="num">#${r.n}</span><b>${esc(r.p)}.${esc(r.pc)}</b> → <b>${esc(r.c)}.${esc(r.cc)}</b> &nbsp;${esc(r.card)}${r.nul?', optional':''}<small>${esc(r.join)}</small></div>`;
+function selectTable(t){
+  sel={type:'table',t};applySel();
+  const s=SECS[T[t].sec],asP=R.filter(r=>r.p===t),asC=R.filter(r=>r.c===t);
+  let h=`<div class="meta">${esc(s.name)} section, ${T[t].cols.length} columns, ${asP.length+asC.length} relationships</div><table class="dt"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead><tbody>`;
+  T[t].cols.forEach(c=>h+=`<tr><td><b>${esc(c[0])}</b><br><small>${esc(c[3])}</small></td><td>${esc(c[1])}</td><td>${esc(c[2])}</td></tr>`);
+  h+=`</tbody></table><h3>References (${asC.length})</h3>${asC.map(relCard).join('')||'<div class="meta">None</div>'}<h3>Referenced by (${asP.length})</h3>${asP.map(relCard).join('')||'<div class="meta">None</div>'}`;
+  openPanel(t,s.color,h);
+}
+function selectCol(t,c){
+  sel={type:'col',t,c};applySel();
+  const col=T[t].cols.find(x=>x[0]===c),q=R.filter(r=>(r.p===t&&r.pc===c)||(r.c===t&&r.cc===c));
+  openPanel(`${t}.${c}`,SECS[T[t].sec].color,`<table class="dt"><tr><th>Data type</th><td>${esc(col[1])}</td></tr><tr><th>Constraints</th><td>${esc(col[2])}</td></tr><tr><th>Description</th><td>${esc(col[3])}</td></tr></table><h3>Connections (${q.length})</h3>${q.map(relCard).join('')||'<div class="meta">No connection uses this column.</div>'}<h3>Table</h3><div class="rel" data-tb="${esc(t)}">Open ${esc(t)}</div>`);
+}
+function selectRel(n){
+  sel={type:'rel',n};applySel();const r=R.find(x=>x.n===n);
+  openPanel(`Connection #${n}`,SECS[T[r.c].sec].color,`${relCard(r)}<table class="dt" style="margin-top:10px"><tr><th>Parent</th><td><a href="#" data-tb="${esc(r.p)}">${esc(r.p)}</a>.${esc(r.pc)}</td></tr><tr><th>Child</th><td><a href="#" data-tb="${esc(r.c)}">${esc(r.c)}</a>.${esc(r.cc)}</td></tr><tr><th>Cardinality</th><td>${esc(r.card)}</td></tr><tr><th>FK nullable</th><td>${r.nul?'Yes':'No'}</td></tr></table>`);
+}
+function selectSec(sid,btn){
+  sel={type:'sec',s:sid};applySel();
+  document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active',b===btn));
+  const b=SECS[sid].box;zoomTo(b[0],b[1],b[2]-b[0],b[3]-b[1]);
+}
+function clearSel(){sel=null;applySel();panel.classList.remove('open');panel.setAttribute('aria-hidden','true')}
+
+let scale=.5,px=20,py=20;
+function apply(){scene.style.transform=`translate(${px}px,${py}px) scale(${scale})`}
+function zoomTo(x,y,w,h){const q=vp.getBoundingClientRect();scale=Math.max(.15,Math.min(1.2,Math.min((q.width-60)/w,(q.height-60)/h)));px=q.width/2-(x+w/2)*scale;py=q.height/2-(y+h/2)*scale;apply()}
+function fit(){zoomTo(0,0,L.geo.W,L.geo.H);document.querySelectorAll('.nav button').forEach((b,i)=>b.classList.toggle('active',i===0))}
+function focusTable(t){const p=L.geo.pos[t];zoomTo(p.x-200,p.y-80,TW+400,tH(t)+160)}
+let pan=false,lx=0,ly=0,moved=false;
+vp.addEventListener('mousedown',e=>{if(e.target.closest('.tbl'))return;pan=true;moved=false;lx=e.clientX;ly=e.clientY;vp.classList.add('drag')});
+addEventListener('mousemove',e=>{if(!pan)return;if(Math.abs(e.clientX-lx)+Math.abs(e.clientY-ly)>2)moved=true;px+=e.clientX-lx;py+=e.clientY-ly;lx=e.clientX;ly=e.clientY;apply()});
+addEventListener('mouseup',e=>{if(pan&&!moved&&!e.target.closest('.tbl')&&e.target.closest('#vp'))clearSel();pan=false;vp.classList.remove('drag')});
+vp.addEventListener('wheel',e=>{e.preventDefault();const r=vp.getBoundingClientRect(),mx=e.clientX-r.left,my=e.clientY-r.top,o=scale,n=Math.max(.12,Math.min(1.6,o*(e.deltaY<0?1.12:.89)));px=mx-(mx-px)*n/o;py=my-(my-py)*n/o;scale=n;apply()},{passive:false});
+document.getElementById('zi').onclick=()=>{scale=Math.min(1.6,scale*1.2);apply()};
+document.getElementById('zo').onclick=()=>{scale=Math.max(.12,scale/1.2);apply()};
+document.getElementById('fit').onclick=fit;
+document.getElementById('clr').onclick=()=>{document.getElementById('q').value='';clearSel();fit()};
+document.getElementById('px').onclick=clearSel;
+addEventListener('keydown',e=>{if(e.key==='Escape')clearSel()});
+document.getElementById('tUser').onclick=e=>{showUser=!showUser;e.currentTarget.setAttribute('aria-pressed',showUser);draw()};
+let tm;function toast(s){const t=document.getElementById('toast');t.textContent=s;t.classList.add('show');clearTimeout(tm);tm=setTimeout(()=>t.classList.remove('show'),1400)}
+document.getElementById('q').addEventListener('input',e=>{
+  const q=e.target.value.trim().toLowerCase();if(!q){clearSel();return}
+  for(const t of D.order){
+    if(t.includes(q)){selectTable(t);focusTable(t);return}
+  }
+  for(const t of D.order){for(const c of T[t].cols){if((c[0]+' '+c[1]+' '+c[2]).toLowerCase().includes(q)){selectCol(t,c[0]);focusTable(t);return}}}
+  toast('No match');
+});
+function buildNav(){
+  const nav=document.getElementById('nav');
+  const all=document.createElement('button');all.textContent='All';all.className='active';all.onclick=()=>{clearSel();fit()};nav.appendChild(all);
+  Object.entries(SECS).forEach(([sid,s])=>{const b=document.createElement('button');b.innerHTML=`<i style="background:${s.color}"></i>${s.n?s.n+'. ':''}${esc(s.name)}`;b.onclick=()=>selectSec(sid,b);nav.appendChild(b)});
+  const cols=Object.values(T).reduce((a,t)=>a+t.cols.length,0),pks=Object.values(T).reduce((a,t)=>a+t.cols.filter(c=>/^PK/.test(c[2])).length,0);
+  const st=document.createElement('div');st.className='stats';st.innerHTML=`<b>${Object.keys(T).length}</b> tables, <b>${cols}</b> columns, <b>${pks}</b> PKs, <b>${R.length}</b> FK connections, all drawn`;nav.appendChild(st);
+}
+buildNav();buildTables();draw();fit();
+addEventListener('resize',()=>{if(!sel)fit()});
+</script>
+</body>
+</html>
