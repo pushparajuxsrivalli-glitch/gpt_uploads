@@ -1,5 +1,5 @@
 dimension,rule_code,rule_name,rule_type,description,target_type,default_threshold,data_type,semantic_type,parameter_definition,evaluation_operator,sql_query_template
-ACCURACY,A01,Reference-match accuracy %,PARAMETERIZED,Percentage of applicable values matching a trusted reference.,COLUMN / TABLE,99.000000,ALL,ANY,"
+ACCURACY,A01,Reference-match accuracy %,PARAMETERIZED,Percentage of applicable values matching a trusted reference.,COLUMN / TABLE,99,ALL,ANY,"
 {
   ""parameters"": [
     {
@@ -34,7 +34,7 @@ SELECT
 FROM {table}
 WHERE {column} IS NOT NULL
 "
-ACCURACY,A02,Reference lookup success %,PARAMETERIZED,Percentage of values successfully resolved through reference lookup.,COLUMN,99.000000,ALL,ANY,"{
+ACCURACY,A02,Reference lookup success %,PARAMETERIZED,Percentage of values successfully resolved through reference lookup.,COLUMN,99,ALL,ANY,"{
           ""parameters"":[
             {
               ""name"":""reference_asset"",
@@ -67,7 +67,7 @@ SELECT
 FROM {table}
 WHERE {column} IS NOT NULL
 "
-BUSINESS,B01,Conditional completeness %,PARAMETERIZED,Required field populated when configured condition is true.,COLUMN / CROSS-COLUMN,99.000000,ALL,ANY,"{
+BUSINESS,B01,Conditional completeness %,PARAMETERIZED,Required field populated when configured condition is true.,COLUMN / CROSS-COLUMN,99,ALL,ANY,"{
           ""parameters"":[
             {
               ""name"":""condition"",
@@ -99,7 +99,7 @@ SELECT
     COUNT_IF({condition}) AS applicable_count
 FROM {table}
 "
-BUSINESS,B02,Conditional validity %,PARAMETERIZED,Validation requirement satisfied when configured condition is true.,COLUMN / CROSS-COLUMN,99.000000,ALL,ANY,"{
+BUSINESS,B02,Conditional validity %,PARAMETERIZED,Validation requirement satisfied when configured condition is true.,COLUMN / CROSS-COLUMN,99,ALL,ANY,"{
           ""parameters"":[
             {
               ""name"":""condition"",
@@ -131,7 +131,7 @@ SELECT
     COUNT_IF({condition}) AS applicable_count
 FROM {table}
 "
-BUSINESS,B03,Mutual-exclusion compliance %,PARAMETERIZED,Percentage of records not violating mutually exclusive conditions.,CROSS-COLUMN,99.000000,ALL,ANY,"{
+BUSINESS,B03,Mutual-exclusion compliance %,PARAMETERIZED,Percentage of records not violating mutually exclusive conditions.,CROSS-COLUMN,99,ALL,ANY,"{
           ""parameters"":[
             {
               ""name"":""mutual_exclusion_conditions"",
@@ -151,7 +151,7 @@ SELECT
     COUNT(*) AS applicable_count
 FROM {table}
 "
-BUSINESS,B04,At-least-one-field compliance %,PARAMETERIZED,Percentage of records with at least one configured field populated.,CROSS-COLUMN,99.000000,ALL,ANY,"{
+BUSINESS,B04,At-least-one-field compliance %,PARAMETERIZED,Percentage of records with at least one configured field populated.,CROSS-COLUMN,99,ALL,ANY,"{
           ""parameters"":[
             {
               ""name"":""selected_columns"",
@@ -171,7 +171,7 @@ SELECT
     COUNT(*) AS applicable_count
 FROM {table}
 "
-BUSINESS,B05,Date sequence compliance %,PARAMETERIZED,Percentage of records satisfying configured date sequence.,CROSS-COLUMN,99.000000,DATE/TIMESTAMP,DATE_TIME,"{
+BUSINESS,B05,Date sequence compliance %,PARAMETERIZED,Percentage of records satisfying configured date sequence.,CROSS-COLUMN,99,DATE/TIMESTAMP,DATE_TIME,"{
           ""parameters"":[
             {
               ""name"":""date_sequence_columns"",
@@ -191,7 +191,7 @@ SELECT
     COUNT(*) AS applicable_count
 FROM {table}
 "
-BUSINESS,B06,Aggregate reconciliation %,PARAMETERIZED,Percentage reconciliation between configured source and target aggregates.,TABLE / CROSS-TABLE,99.900000,ALL,ANY,"{
+BUSINESS,B06,Aggregate reconciliation %,PARAMETERIZED,Percentage reconciliation between configured source and target aggregates.,TABLE / CROSS-TABLE,99.9,ALL,ANY,"{
           ""parameters"":[
             {
               ""name"":""source_asset"",
@@ -231,7 +231,7 @@ SELECT
     1 AS applicable_count
 FROM {source_asset}, {target_asset}
 "
-BUSINESS,B07,Row-level reconciliation %,PARAMETERIZED,Percentage of applicable source/target records reconciled.,CROSS-TABLE,99.000000,ALL,ANY,"{
+BUSINESS,B07,Row-level reconciliation %,PARAMETERIZED,Percentage of applicable source/target records reconciled.,CROSS-TABLE,99,ALL,ANY,"{
           ""parameters"":[
             {
               ""name"":""source_asset"",
@@ -277,7 +277,7 @@ FROM {source_asset} s
 JOIN {target_asset} t
     ON s.{source_key_column} = t.{target_key_column}
 "
-BUSINESS,B08,Conditional allowed-value compliance %,PARAMETERIZED,Percentage of values allowed for the configured row condition.,COLUMN / CROSS-COLUMN,99.000000,ALL,ANY,"{
+BUSINESS,B08,Conditional allowed-value compliance %,PARAMETERIZED,Percentage of values allowed for the configured row condition.,COLUMN / CROSS-COLUMN,99,ALL,ANY,"{
           ""parameters"":[
             {
               ""name"":""condition"",
@@ -310,7 +310,7 @@ SELECT
     COUNT_IF({condition}) AS applicable_count
 FROM {table}
 "
-COMPLETENESS,C01,Completeness %,SQL,Percentage of records where the target value is populated.,COLUMN / TABLE,95.000000,ALL,ANY,null,>=,"
+COMPLETENESS,C01,Completeness %,SQL,Percentage of records where the target value is populated.,COLUMN / TABLE,95,ALL,ANY,null,>=,"
 SELECT
     100.0 * COUNT({column}) / NULLIF(COUNT(*), 0) AS metric_value,
     COUNT({column}) AS passed_count,
@@ -319,7 +319,7 @@ SELECT
     COUNT(*) AS applicable_count
 FROM {table}
 "
-COMPLETENESS,C02,Null %,SQL,Percentage of records containing NULL values.,COLUMN / TABLE,5.000000,ALL,ANY,null,<=,"
+COMPLETENESS,C02,Null %,SQL,Percentage of records containing NULL values.,COLUMN / TABLE,5,ALL,ANY,null,<=,"
 SELECT
     100.0 * COUNT_IF({column} IS NULL) / NULLIF(COUNT(*), 0) AS metric_value,
     COUNT_IF({column} IS NOT NULL) AS passed_count,
@@ -328,7 +328,7 @@ SELECT
     COUNT(*) AS applicable_count
 FROM {table}
 "
-COMPLETENESS,C03,Blank %,SQL,Percentage of NULL or blank values.,COLUMN,2.000000,STRING,ANY,null,<=,"SELECT
+COMPLETENESS,C03,Blank %,SQL,Percentage of NULL or blank values.,COLUMN,2,STRING,ANY,null,<=,"SELECT
     100.0 * COUNT_IF({column} IS NULL OR TRIM(CAST({column} AS STRING)) = '')
         / NULLIF(COUNT(*), 0) AS metric_value,
     COUNT_IF({column} IS NOT NULL AND TRIM(CAST({column} AS STRING)) <> '') AS passed_count,
@@ -336,7 +336,7 @@ COMPLETENESS,C03,Blank %,SQL,Percentage of NULL or blank values.,COLUMN,2.000000
     COUNT(*) AS total_count,
     COUNT(*) AS applicable_count
 FROM {table}"
-COMPLETENESS,C04,Required-field compliance %,PARAMETERIZED,Percentage of records satisfying configured mandatory-field conditions.,COLUMN / TABLE,98.000000,ALL,ANY,"{
+COMPLETENESS,C04,Required-field compliance %,PARAMETERIZED,Percentage of records satisfying configured mandatory-field conditions.,COLUMN / TABLE,98,ALL,ANY,"{
           ""parameters"":[
             {
               ""name"":""mandatory_condition"",
@@ -355,7 +355,7 @@ SELECT
     COUNT(*) AS applicable_count
 FROM {table}
 "
-COMPLETENESS,C05,Record completeness %,PARAMETERIZED,Average completeness across configured required fields.,TABLE,95.000000,ALL,ANY,"{
+COMPLETENESS,C05,Record completeness %,PARAMETERIZED,Average completeness across configured required fields.,TABLE,95,ALL,ANY,"{
           ""parameters"":[
             {
               ""name"":""required_columns"",
@@ -381,7 +381,7 @@ COMPLETENESS,C06,Missing-field count,SQL,Count of missing or blank values.,COLUM
     COUNT(*) AS total_count,
     COUNT(*) AS applicable_count
 FROM {table}"
-COMPLETENESS,C07,Selected-column completeness %,PARAMETERIZED,Percentage of records where all configured selected columns are populated.,TABLE,95.000000,ALL,ANY,"{
+COMPLETENESS,C07,Selected-column completeness %,PARAMETERIZED,Percentage of records where all configured selected columns are populated.,TABLE,95,ALL,ANY,"{
           ""parameters"":[
             {
               ""name"":""selected_columns"",
@@ -400,7 +400,7 @@ SELECT
     COUNT(*) AS applicable_count
 FROM {table}
 "
-CONSISTENCY,K01,Cross-column consistency %,PARAMETERIZED,Percentage of records satisfying configured cross-column relationship.,CROSS-COLUMN,99.000000,ALL,ANY,"{
+CONSISTENCY,K01,Cross-column consistency %,PARAMETERIZED,Percentage of records satisfying configured cross-column relationship.,CROSS-COLUMN,99,ALL,ANY,"{
           ""parameters"":[
             {
               ""name"":""left_column"",
@@ -437,7 +437,7 @@ SELECT
     COUNT(*) AS applicable_count
 FROM {table}
 "
-CONSISTENCY,K02,Conditional rule compliance %,PARAMETERIZED,Percentage of applicable records satisfying a conditional requirement.,COLUMN / CROSS-COLUMN,99.000000,ALL,ANY,"{
+CONSISTENCY,K02,Conditional rule compliance %,PARAMETERIZED,Percentage of applicable records satisfying a conditional requirement.,COLUMN / CROSS-COLUMN,99,ALL,ANY,"{
           ""parameters"":[
             {
               ""name"":""condition"",
@@ -469,7 +469,7 @@ SELECT
     COUNT_IF({condition}) AS applicable_count
 FROM {table}
 "
-CONSISTENCY,K03,Standardization compliance %,PARAMETERIZED,Percentage of values matching configured canonical representation.,COLUMN,98.000000,STRING,CODE/ID/STATUS,"
+CONSISTENCY,K03,Standardization compliance %,PARAMETERIZED,Percentage of values matching configured canonical representation.,COLUMN,98,STRING,CODE/ID/STATUS,"
 {
   ""parameters"": [
     {
@@ -530,7 +530,7 @@ SELECT
 FROM {table}
 WHERE {column} IS NOT NULL
 "
-CONSISTENCY,K04,Case consistency %,PARAMETERIZED,Percentage of values following configured case convention.,COLUMN,99.000000,STRING,CODE/ID/STATUS,"
+CONSISTENCY,K04,Case consistency %,PARAMETERIZED,Percentage of values following configured case convention.,COLUMN,99,STRING,CODE/ID/STATUS,"
 {
   ""parameters"": [
     {
@@ -591,7 +591,7 @@ SELECT
 FROM {table}
 WHERE {column} IS NOT NULL
 "
-CONSISTENCY,K05,Whitespace compliance %,SQL,Percentage of values without leading or trailing whitespace.,COLUMN,99.000000,STRING,ANY,null,>=,"
+CONSISTENCY,K05,Whitespace compliance %,SQL,Percentage of values without leading or trailing whitespace.,COLUMN,99,STRING,ANY,null,>=,"
 SELECT
     100.0 *
     COUNT_IF(
@@ -614,7 +614,7 @@ SELECT
     COUNT({column}) AS applicable_count
 FROM {table}
 "
-CONSISTENCY,K06,Cross-table consistency %,PARAMETERIZED,Percentage of records satisfying a configured cross-table relationship.,CROSS-TABLE,99.000000,ALL,ANY,"
+CONSISTENCY,K06,Cross-table consistency %,PARAMETERIZED,Percentage of records satisfying a configured cross-table relationship.,CROSS-TABLE,99,ALL,ANY,"
 {
   ""parameters"": [
     {
@@ -648,7 +648,7 @@ SELECT
     COUNT(*) AS applicable_count
 FROM {table}
 "
-CONSISTENCY,K07,Category fragmentation rate,PARAMETERIZED,Rate of non-canonical category variants.,COLUMN,1.000000,STRING,CODE/STATUS,"{
+CONSISTENCY,K07,Category fragmentation rate,PARAMETERIZED,Rate of non-canonical category variants.,COLUMN,1,STRING,CODE/STATUS,"{
           ""parameters"":[
             {
               ""name"":""canonical_values"",
@@ -687,7 +687,7 @@ CUSTOM,X04,Custom SQL Single-Result Rule,CUSTOM_SQL,Custom SQL returning one sta
 CUSTOM,X05,Custom CASE-WHEN Classification,CUSTOM_EXPRESSION,Custom CASE-WHEN classification.,COLUMN / TABLE,null,ALL,ANY,null,null,TBF
 CUSTOM,X06,Custom Cross-Table SQL Rule,CUSTOM_SQL,Custom cross-table JOIN/EXISTS/NOT EXISTS rule.,CROSS-TABLE,null,ALL,ANY,null,null,TBF
 CUSTOM,X07,Custom Expression Threshold,CUSTOM_EXPRESSION,Evaluate a custom expression result against a configured threshold.,COLUMN / TABLE,null,ALL,ANY,null,>=,TBF
-INTEGRITY,I01,Referential integrity %,PARAMETERIZED,Percentage of non-null child keys found in the parent table.,CROSS-TABLE,99.900000,ALL,ID,"{
+INTEGRITY,I01,Referential integrity %,PARAMETERIZED,Percentage of non-null child keys found in the parent table.,CROSS-TABLE,99.9,ALL,ID,"{
           ""parameters"":[
             {
               ""name"":""parent_asset"",
@@ -730,7 +730,7 @@ LEFT JOIN (
 ) c
 ON p.parent_key = c.child_key
 "
-INTEGRITY,I02,Orphan record %,PARAMETERIZED,Percentage of child records without a matching parent.,CROSS-TABLE,0.100000,ALL,ID,"{
+INTEGRITY,I02,Orphan record %,PARAMETERIZED,Percentage of child records without a matching parent.,CROSS-TABLE,0.1,ALL,ID,"{
           ""parameters"":[
             {
               ""name"":""parent_asset"",
@@ -816,7 +816,7 @@ FROM parent_keys p
 LEFT JOIN child_keys c
 ON p.parent_key = c.child_key
 "
-INTEGRITY,I04,Primary-key null %,PARAMETERIZED,Percentage of records where the configured primary key is NULL.,TABLE,0.000000,ALL,ID,"{
+INTEGRITY,I04,Primary-key null %,PARAMETERIZED,Percentage of records where the configured primary key is NULL.,TABLE,0,ALL,ID,"{
           ""parameters"":[
             {
               ""name"":""primary_key_column"",
@@ -972,7 +972,7 @@ SELECT
 
 FROM {table}
 "
-PROFILING,P10,Outlier %,PARAMETERIZED,Percentage of values identified as statistical outliers.,COLUMN,2.000000,NUMERIC,NUMERIC_BUSINESS,"{
+PROFILING,P10,Outlier %,PARAMETERIZED,Percentage of values identified as statistical outliers.,COLUMN,2,NUMERIC,NUMERIC_BUSINESS,"{
           ""parameters"":[
             {
               ""name"":""outlier_definition"",
@@ -1085,7 +1085,7 @@ SELECT
     1 AS applicable_count
 FROM {table}
 "
-PROFILING,P14,Schema compliance %,PARAMETERIZED,Percentage of expected schema columns matching actual name and type.,TABLE,99.000000,ALL,ANY,"{
+PROFILING,P14,Schema compliance %,PARAMETERIZED,Percentage of expected schema columns matching actual name and type.,TABLE,99,ALL,ANY,"{
           ""parameters"":[
             {
               ""name"":""expected_schema"",
@@ -1103,7 +1103,7 @@ SELECT
     {expected_column_count} AS applicable_count
 FROM {table}
 "
-TIMELINESS,T01,SLA compliance %,PARAMETERIZED,Percentage of records meeting configured SLA.,TABLE / COLUMN,98.000000,ALL,DATE_TIME,"{
+TIMELINESS,T01,SLA compliance %,PARAMETERIZED,Percentage of records meeting configured SLA.,TABLE / COLUMN,98,ALL,DATE_TIME,"{
           ""parameters"":[
             {
               ""name"":""sla_condition"",
@@ -1238,7 +1238,7 @@ FROM {table}
 WHERE {source_timestamp_column} IS NOT NULL
   AND {ingestion_timestamp_column} IS NOT NULL
 "
-TIMELINESS,T05,Late-record %,PARAMETERIZED,Percentage of records arriving later than configured expectation.,TABLE / COLUMN,2.000000,ALL,DATE_TIME,"{
+TIMELINESS,T05,Late-record %,PARAMETERIZED,Percentage of records arriving later than configured expectation.,TABLE / COLUMN,2,ALL,DATE_TIME,"{
   ""parameters"": [
     {
       ""name"": ""arrival_timestamp_column"",
@@ -1269,7 +1269,7 @@ SELECT
 FROM {table}
 WHERE {arrival_timestamp_column} IS NOT NULL
 "
-TIMELINESS,T06,Expected-arrival coverage %,PARAMETERIZED,Percentage of expected arrivals actually received.,TABLE,99.000000,ALL,ANY,"
+TIMELINESS,T06,Expected-arrival coverage %,PARAMETERIZED,Percentage of expected arrivals actually received.,TABLE,99,ALL,ANY,"
 {
   ""parameters"": [
     {
@@ -1296,7 +1296,7 @@ SELECT
     {expected_arrival_count} AS applicable_count
 FROM {table}
 "
-UNIQUENESS,U01,Uniqueness %,SQL,Percentage of distinct non-null values.,COLUMN / TABLE,99.000000,ALL,ID/CODE,null,>=,"
+UNIQUENESS,U01,Uniqueness %,SQL,Percentage of distinct non-null values.,COLUMN / TABLE,99,ALL,ID/CODE,null,>=,"
 SELECT
     100.0 * COUNT(DISTINCT {column})
         / NULLIF(COUNT({column}), 0) AS metric_value,
@@ -1306,7 +1306,7 @@ SELECT
     COUNT({column}) AS applicable_count
 FROM {table}
 "
-UNIQUENESS,U02,Duplicate value %,PARAMETERIZED,Percentage of non-null values belonging to duplicate groups.,COLUMN,1.000000,ALL,ID/CODE,"{
+UNIQUENESS,U02,Duplicate value %,PARAMETERIZED,Percentage of non-null values belonging to duplicate groups.,COLUMN,1,ALL,ID/CODE,"{
           ""parameters"":[]
         }",<=,"
 SELECT
@@ -1342,7 +1342,7 @@ SELECT
 FROM {table}
 WHERE {column} IS NOT NULL
 "
-UNIQUENESS,U03,Duplicate group count,PARAMETERIZED,Number of distinct values occurring more than once.,COLUMN,0.000000,ALL,ID/CODE,"{
+UNIQUENESS,U03,Duplicate group count,PARAMETERIZED,Number of distinct values occurring more than once.,COLUMN,0,ALL,ID/CODE,"{
           ""parameters"":[]
         }",<=,"
 SELECT
@@ -1359,7 +1359,7 @@ FROM (
     HAVING COUNT(*) > 1
 ) duplicate_groups
 "
-UNIQUENESS,U04,Primary-key compliance %,PARAMETERIZED,Percentage of records having a non-null unique primary key.,TABLE,100.000000,ALL,ANY,"{
+UNIQUENESS,U04,Primary-key compliance %,PARAMETERIZED,Percentage of records having a non-null unique primary key.,TABLE,100,ALL,ANY,"{
           ""parameters"":[
             {
               ""name"":""primary_key_column"",
@@ -1404,7 +1404,7 @@ SELECT
     total_count AS applicable_count
 FROM key_stats
 "
-UNIQUENESS,U05,Composite-key uniqueness %,PARAMETERIZED,Percentage of applicable records with unique configured composite key.,TABLE,100.000000,ALL,ANY,"{
+UNIQUENESS,U05,Composite-key uniqueness %,PARAMETERIZED,Percentage of applicable records with unique configured composite key.,TABLE,100,ALL,ANY,"{
           ""parameters"":[
             {
               ""name"":""composite_key_columns"",
@@ -1433,7 +1433,7 @@ FROM (
     FROM {table}
 ) keyed_rows
 "
-VALIDITY,V01,Validity %,PARAMETERIZED,Percentage of applicable values satisfying a configured validation rule.,COLUMN / TABLE,95.000000,NUMERIC,NUMERIC_BUSINESS,"{
+VALIDITY,V01,Validity %,PARAMETERIZED,Percentage of applicable values satisfying a configured validation rule.,COLUMN / TABLE,95,NUMERIC,NUMERIC_BUSINESS,"{
           ""parameters"":[
             {
               ""name"":""validation_condition"",
@@ -1453,7 +1453,7 @@ SELECT
 FROM {table}
 WHERE {column} IS NOT NULL
 "
-VALIDITY,V02,Pattern compliance %,PARAMETERIZED,Percentage of non-null values matching a configured regular expression.,COLUMN,98.000000,STRING,EMAIL/PHONE/ID/CODE,"{
+VALIDITY,V02,Pattern compliance %,PARAMETERIZED,Percentage of non-null values matching a configured regular expression.,COLUMN,98,STRING,EMAIL/PHONE/ID/CODE,"{
           ""parameters"":[
             {
               ""name"":""regular_expression"",
@@ -1478,7 +1478,7 @@ SELECT
 FROM {table}
 WHERE {column} IS NOT NULL
 "
-VALIDITY,V03,Email validity %,PARAMETERIZED,Percentage of non-null values satisfying email format.,COLUMN,98.000000,STRING,EMAIL,"{
+VALIDITY,V03,Email validity %,PARAMETERIZED,Percentage of non-null values satisfying email format.,COLUMN,98,STRING,EMAIL,"{
       ""parameters"": [
         {
           ""name"": ""regular_expression"",
@@ -1518,7 +1518,7 @@ SELECT
 
 FROM {table}
 "
-VALIDITY,V04,Phone validity %,PARAMETERIZED,Percentage of values satisfying configured phone validation.,COLUMN,98.000000,STRING,PHONE,"{
+VALIDITY,V04,Phone validity %,PARAMETERIZED,Percentage of values satisfying configured phone validation.,COLUMN,98,STRING,PHONE,"{
           ""parameters"":[
             {
               ""name"":""phone_validation_pattern"",
@@ -1543,7 +1543,7 @@ SELECT
 FROM {table}
 WHERE {column} IS NOT NULL
 "
-VALIDITY,V05,Range compliance %,PARAMETERIZED,Percentage of applicable values within configured minimum and maximum.,COLUMN,99.000000,NUMERIC,NUMERIC_BUSINESS,"{""parameters"":[{""name"":""minimum_value"",""label"":""Minimum value"",""control"":""number"",""required"":true},{""name"":""maximum_value"",""label"":""Maximum value"",""control"":""number"",""required"":true}]}",>=,"SELECT
+VALIDITY,V05,Range compliance %,PARAMETERIZED,Percentage of applicable values within configured minimum and maximum.,COLUMN,99,NUMERIC,NUMERIC_BUSINESS,"{""parameters"":[{""name"":""minimum_value"",""label"":""Minimum value"",""control"":""number"",""required"":true},{""name"":""maximum_value"",""label"":""Maximum value"",""control"":""number"",""required"":true}]}",>=,"SELECT
     100.0 * COUNT_IF({column} >= {minimum_value} AND {column} <= {maximum_value})
         / NULLIF(COUNT({column}), 0) AS metric_value,
     COUNT_IF({column} >= {minimum_value} AND {column} <= {maximum_value}) AS passed_count,
@@ -1551,7 +1551,7 @@ VALIDITY,V05,Range compliance %,PARAMETERIZED,Percentage of applicable values wi
     COUNT(*) AS total_count,
     COUNT({column}) AS applicable_count
 FROM {table}"
-VALIDITY,V06,Allowed-value compliance %,PARAMETERIZED,Percentage of values belonging to a configured allowed-value set.,COLUMN,99.000000,STRING,STATUS/CODE,"{
+VALIDITY,V06,Allowed-value compliance %,PARAMETERIZED,Percentage of values belonging to a configured allowed-value set.,COLUMN,99,STRING,STATUS/CODE,"{
           ""parameters"":[
             {
               ""name"":""allowed_values"",
@@ -1576,7 +1576,7 @@ SELECT
 FROM {table}
 WHERE {column} IS NOT NULL
 "
-VALIDITY,V07,Length compliance %,PARAMETERIZED,Percentage of string values within configured length limits.,COLUMN,99.000000,STRING,ANY,"{
+VALIDITY,V07,Length compliance %,PARAMETERIZED,Percentage of string values within configured length limits.,COLUMN,99,STRING,ANY,"{
           ""parameters"":[
             {
               ""name"":""minimum_length"",
@@ -1612,7 +1612,7 @@ SELECT
 FROM {table}
 WHERE {column} IS NOT NULL
 "
-VALIDITY,V08,Format compliance %,PARAMETERIZED,Percentage of values satisfying configured format.,COLUMN,99.000000,STRING,CODE/ID/EMAIL/PHONE,"{
+VALIDITY,V08,Format compliance %,PARAMETERIZED,Percentage of values satisfying configured format.,COLUMN,99,STRING,CODE/ID/EMAIL/PHONE,"{
   ""parameters"": [
     {
       ""name"": ""format_definition"",
@@ -1644,7 +1644,7 @@ FROM {table}
 
 WHERE {column} IS NOT NULL
 "
-VALIDITY,V09,Character compliance %,PARAMETERIZED,Percentage of values containing only permitted character classes.,COLUMN,99.000000,STRING,ANY,"{
+VALIDITY,V09,Character compliance %,PARAMETERIZED,Percentage of values containing only permitted character classes.,COLUMN,99,STRING,ANY,"{
           ""parameters"":[
             {
               ""name"":""allowed_character_pattern"",
@@ -1669,7 +1669,7 @@ SELECT
 FROM {table}
 WHERE {column} IS NOT NULL
 "
-VALIDITY,V10,Positive-value compliance %,SQL,Percentage of non-null numeric values greater than zero.,COLUMN,99.000000,NUMERIC,NUMERIC_BUSINESS,null,>=,"
+VALIDITY,V10,Positive-value compliance %,SQL,Percentage of non-null numeric values greater than zero.,COLUMN,99,NUMERIC,NUMERIC_BUSINESS,null,>=,"
 SELECT
     100.0 * COUNT_IF({column} > 0) / NULLIF(COUNT({column}), 0) AS metric_value,
     COUNT_IF({column} > 0) AS passed_count,
@@ -1678,7 +1678,7 @@ SELECT
     COUNT({column}) AS applicable_count
 FROM {table}
 "
-VALIDITY,V11,Non-negative compliance %,SQL,Percentage of non-null numeric values greater than or equal to zero.,COLUMN,99.000000,NUMERIC,NUMERIC_BUSINESS,null,>=,"
+VALIDITY,V11,Non-negative compliance %,SQL,Percentage of non-null numeric values greater than or equal to zero.,COLUMN,99,NUMERIC,NUMERIC_BUSINESS,null,>=,"
 SELECT
     100.0 * COUNT_IF({column} >= 0) / NULLIF(COUNT({column}), 0) AS metric_value,
     COUNT_IF({column} >= 0) AS passed_count,
@@ -1687,7 +1687,7 @@ SELECT
     COUNT({column}) AS applicable_count
 FROM {table}
 "
-VALIDITY,V12,Future-date violation %,SQL,Percentage of non-null date/timestamp values occurring in the future.,COLUMN,0.100000,DATE/TIMESTAMP,DATE_TIME,null,<=,"
+VALIDITY,V12,Future-date violation %,SQL,Percentage of non-null date/timestamp values occurring in the future.,COLUMN,0.1,DATE/TIMESTAMP,DATE_TIME,null,<=,"
 SELECT
     100.0 *
     COUNT_IF(
